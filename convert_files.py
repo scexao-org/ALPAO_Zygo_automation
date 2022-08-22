@@ -21,12 +21,15 @@ sftp = ssh.open_sftp()
 class ConvertFiles:
     _save_path = ""
     _retrieve_path = ""
-
+    
     def __init__(self, retrievepath, savepath):
+        # retrieve path is where .datx files are saved.
+        # save path is where post-data processing .fits files are saved. 
         self._retrieve_path = retrievepath
         self._save_path = savepath
-
+    
     def find_active_actuator(self, nact=64, ca=1):
+        # creates a mask to iterate through the active actuators. 
         pupil_grid = make_pupil_grid(nact)
         mask = circular_aperture(ca)(pupil_grid)
         idx = np.where(mask == 1)[0]
@@ -35,6 +38,7 @@ class ConvertFiles:
         return active_actuator
 
     def windows2linux(self, file_name):
+        # transfer file from zygo windows computer to dm linux computer.
         file_path = 'C:/Users/zygo/zygo_alicia/zygo_rawdata/'
         name = file_path + file_name
         file = self._retrieve_path + file_name
@@ -44,6 +48,7 @@ class ConvertFiles:
         sftp.get(name, file)
 
     def push_dm(self, dmx, dmy):
+        # ask the dm to push a specific actuator in x, y coordinates. 
         x = np.zeros(((64, 64)), dtype=np.float32)
         dm_shm.set_data(x)
         x[dmx][dmy] = .1
@@ -55,6 +60,7 @@ class ConvertFiles:
         x[dmx][dmy] = 0
 
     def show_h5data(self, file_name):
+        # show the data of a .datx files. Return its data in the form of a numpy array.
         h5data = self._datx2py(self._retrieve_path + file_name)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
@@ -70,6 +76,7 @@ class ConvertFiles:
         return zvals
 
     def show_h5data2(self, file_path):
+        # same as above but the method variable is in the form of a file path instead of a file name. 
         h5data = self._datx2py(file_path)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
@@ -85,6 +92,7 @@ class ConvertFiles:
         return zvals
 
     def reset_zvals0(self):
+        # Set dm to 0 and reset zvals. 
         x = np.zeros((64, 64), dtype=np.float32)
         dm_shm.set_data(x)
         ssh = paramiko.SSHClient()
@@ -108,6 +116,7 @@ class ConvertFiles:
         return zvals
 
     def get_zvals0(self):
+        # return zvals 
         h5data = self._datx2py('/home/aorts/alicia/zygo_data/z_init.datx')
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
@@ -117,6 +126,7 @@ class ConvertFiles:
         return zvals
 
     def analyze(self, dmx, dmy, amplitude):
+        # will take a measurement of a specific actuator w/ a specific amplitude. 
         x = np.zeros((64, 64), dtype=np.float32)
         x[dmx][dmy] = amplitude
         dm_shm.set_data(x)
@@ -149,6 +159,7 @@ class ConvertFiles:
         return diff_wo_ptt
 
     def show_linearity(self, number):
+        # This will show a graph of the linearity of a specific actuator. 
         file_path2 = '/home/aorts/alicia/2_forward/infl_' + str(number) + ".fits"
         file_path5 = '/home/aorts/alicia/5_forward/infl_' + str(number) + ".fits"
         file_path10 = '/home/aorts/alicia/10_forward/infl_' + str(number) + ".fits"
@@ -173,6 +184,7 @@ class ConvertFiles:
         plt.show()
 
     def analyze_data(self, file_zvalsa):
+        # takes .datx file and data process and save as .fits file. 
         h5data = self._datx2py(self._retrieve_path + file_zvalsa)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
@@ -190,6 +202,7 @@ class ConvertFiles:
         return difference
 
     def subtract(self, file_zvals_pos, file_zvals_neg):
+        # takes the difference between two influence functions. Saves as .fits file.
         pos = self._datx2py(self._retrieve_path + file_zvals_pos)
         pos_zdata = pos['Data']['Surface']
         pos_zdata = list(pos_zdata.values())[0]
@@ -214,6 +227,7 @@ class ConvertFiles:
         return difference
 
     def read_fits_file(self, file_path):
+        # will read a single .fits file. 
         nanmask = circular_aperture(0.9)(make_pupil_grid(self.get_zvals0().shape[0])).shaped
         nanmask[nanmask == 0] = np.nan
         file_name = file_path[-14:]
@@ -226,6 +240,7 @@ class ConvertFiles:
         plt.gca().invert_yaxis()
 
     def read_mult_fits_file(self, start, stop):
+        # will read multiple fits files. 
         influence_functions = []
         for i in range(start, stop):
             completeName = '/home/aorts/alicia/10_forward/infl_' + str(i + 1).zfill(4) + '.fits'
@@ -249,6 +264,7 @@ class ConvertFiles:
             plt.show()
 
     def remove_ptt(self, data, ca=0.9):
+        # removes piston, tip, and tilt. 
         num_pix = data.shape[0]
         num_modes = 3  # number of zernike modes
         mask = circular_aperture(ca)(make_pupil_grid(num_pix, 1)).shaped
@@ -264,6 +280,7 @@ class ConvertFiles:
         return data_wo_ptt
 
     def _datx2py(self, file_name):
+        # unpacks ,datx files into h5data. 
         # unpack an h5 group into a dict
         def _group2dict(obj):
             return {k: _decode_h5(v) for k, v in zip(obj.keys(), obj.values())}
