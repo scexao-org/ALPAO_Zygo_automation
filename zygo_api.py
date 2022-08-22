@@ -39,12 +39,6 @@ class Zygo:
         self.__save_path = path
 
     def time_loop_measurement(self, duration, interval):
-        '''
-        This will ask the zygo take and save a measurement
-        for 'duration' seconds long every 'interval' seconds
-        :param duration: the amt. of time in seconds the zygo will run
-        :param interval: how often the zygo will take a measurement
-        '''
         iterations = int(duration/interval)
         duration_past = 0
         for x in range(interations):
@@ -56,15 +50,6 @@ class Zygo:
             time.sleep(duration)
 
     def looped_measurement(self, iterations):
-        '''
-        IT WOULD BE NICE TO HAVE THIS AND ^ ALSO SEND A FILE CALLED (MAYBE __TAXES HAH) WHATEVER ITS CALLED THAT CONTAINS THE INFORMATION
-        THAT THE OTHER SIDE WOULD NEED TO READ THE REST OF THE CONTENT: IT WOULD HAVE THE GROUPNAME (AKA SELF.__FILENAME)
-        AND THE NUMBER OF ITERATIONS/FILES
-        Similar to time_loop_measurement().
-        This loop will call the zygo to take measurements every five seconds.
-        The data will be saved to the shared file
-        :param iterations: number of measurements that will be taken
-        '''
         for x in range(interations):
             instrument.measure(wait=True)
             completeName = os.path.join(self.__save_path, self.__filename + ".datx")
@@ -73,11 +58,6 @@ class Zygo:
             time.sleep(5)
 
     def actuator_measurement(self, x_actuators, y_actuators):
-        '''
-        :param x_actuators: rows of x_actuators that will move
-        :param y_actuators: columns of y_actuators that will move
-        '''
-
         for x in range(x_actuators):
             for y in range(y_actuators):
                 instrument.measure(wait=True)
