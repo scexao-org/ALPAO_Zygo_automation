@@ -1,3 +1,7 @@
+'''
+Takes a data cube from a depository and reconstructs a surface. 
+'''
+
 from hcipy import *
 from tqdm import tqdm
 import numpy as np
