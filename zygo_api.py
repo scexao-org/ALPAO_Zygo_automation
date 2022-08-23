@@ -1,3 +1,7 @@
+'''
+Use this in the zygo windows computer. 
+'''
+
 import os, sys
 import numpy as np
 import h5py
