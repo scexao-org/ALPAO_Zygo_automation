@@ -1,3 +1,7 @@
+'''
+Run this to take a data cube. 
+'''
+
 import os, sys
 from hcipy import *
 import numpy as np
