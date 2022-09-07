@@ -42,7 +42,7 @@ and in the sftp.get, change the first string to your zygo save path.
           
 
 
-**Step 4**: Now, you need to decide where you want to save your .datx data on the linux DM computer. From now on, I'll refer to this directory as the retrieve_path. After going through data proccessing and getting rid of the piston, tip, tilt, your data will be saved to a new directory. This directory is called the save_path. In my case, my retrieve_path is "/home/aorts/alicia/zygo_data/" and my save_path is "/home/aorts/alicia/data/". 
+**Step 4**: Now, you need to decide where you want to save your .datx data on the linux DM computer. From now on, I'll refer to this directory as the retrieve_path. After going through data proccessing and getting rid of the piston, tip, tilt, your data will be saved to a new directory. This directory is called the save_path. In my case, my retrieve_path is "/home/aorts/alicia/zygo_rawdata/" and my save_path is "/home/aorts/alicia/zygo_data/". 
 
 **Step 5**: Now, I'm sorry that you have to do this, but you'll need to change all the paths accordingly. I'll do my best to walk you through everything. 
 
@@ -58,6 +58,14 @@ In the get_zvals0 method, do the same as above. Change the string to save_path +
 In the analyze method, do the same as above, except this time with the self.show_h5data2 method. 
 
         zvals0 = self.show_h5data2('/home/aorts/alicia/zygo_data/z_init.datx')
+        
+Finally, in read_mult_fits_file method, change completeName accordingly to your save_path. Replace
+           
+        completeName = '/home/aorts/alicia/zygo_data/infl_' + str(i + 1).zfill(4) + '.fits'
+        
+# How to Use
+
+
         
 
 
