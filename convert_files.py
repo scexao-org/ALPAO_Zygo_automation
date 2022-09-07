@@ -158,31 +158,6 @@ class ConvertFiles:
         self.read_fits_file(completeName)
         return diff_wo_ptt
 
-    def show_linearity(self, number):
-        # This will show a graph of the linearity of a specific actuator. 
-        file_path2 = '/home/aorts/alicia/2_forward/infl_' + str(number) + ".fits"
-        file_path5 = '/home/aorts/alicia/5_forward/infl_' + str(number) + ".fits"
-        file_path10 = '/home/aorts/alicia/10_forward/infl_' + str(number) + ".fits"
-        nanmask = circular_aperture(0.9)(make_pupil_grid(self.get_zvals0().shape[0])).shaped
-        nanmask[nanmask == 0] = np.nan
-
-        image_data2 = fits.getdata(file_path2, ext=0) * nanmask
-        max2 = np.nanmin(image_data2)
-        print(max2)
-
-        image_data5 = fits.getdata(file_path5, ext=0) * nanmask
-        max5 = np.nanmin(image_data5)
-        print(max5)
-
-        image_data10 = fits.getdata(file_path10, ext=0) * nanmask
-        max10 = np.nanmin(image_data10)
-        print(max10)
-
-        fig1 = plt.figure("Figure 1")
-        plt.plot([0.2, 0.5, 1.0], [max2, max5, max10], c="red", lw=2)
-        plt.title(str(number))
-        plt.show()
-
     def analyze_data(self, file_zvalsa):
         # takes .datx file and data process and save as .fits file. 
         h5data = self._datx2py(self._retrieve_path + file_zvalsa)
@@ -243,7 +218,7 @@ class ConvertFiles:
         # will read multiple fits files. 
         influence_functions = []
         for i in range(start, stop):
-            completeName = '/home/aorts/alicia/10_forward/infl_' + str(i + 1).zfill(4) + '.fits'
+            completeName = '/home/aorts/alicia/zygo_data/infl_' + str(i + 1).zfill(4) + '.fits'
             nanmask = circular_aperture(0.9)(make_pupil_grid(self.get_zvals0().shape[0])).shaped
             nanmask[nanmask == 0] = np.nan
             image_data = fits.getdata(completeName, ext=0)
