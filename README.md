@@ -8,7 +8,7 @@ This package's main purpose is to automatize the AO3000 and zygo measurements. I
 Almost all the tools to do this is created in convert_files.py. Adjust the file pathways accordingly w/in the convert_files.py class and in main.py. 
 main.py initializes the convert_files class and sets up how you might want to take measurements. 
 
-
+# How to configure
 
 Step 1: Upload the measure.py file to the zygo computer. You can change the save path to whatever directory in the zygo computer that you desire; this will be where the data is temporarily saved.
            
