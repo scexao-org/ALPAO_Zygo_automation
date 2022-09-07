@@ -10,6 +10,6 @@ main.py initializes the convert_files class and sets up how you might want to ta
 
 Step 1: Upload the measure.py file to the zygo computer. You can change the save path to whatever directory you desire
            
-           zygo1 = Zygo(**'C:\\Users\\zygo\\zygo_alicia\\zygo_rawdata'**)
+zygo1 = Zygo(**'C:\\Users\\zygo\\zygo_alicia\\zygo_rawdata'**)
 
 Step 2: 
