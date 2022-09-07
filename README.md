@@ -55,6 +55,10 @@ In the get_zvals0 method, do the same as above. Change the string to save_path +
 
         h5data = self._datx2py('/home/aorts/alicia/zygo_data/z_init.datx')
 
+In the analyze method, do the same as above, except this time with the self.show_h5data2 method. 
+
+        zvals0 = self.show_h5data2('/home/aorts/alicia/zygo_data/z_init.datx')
+        
 
 
 
