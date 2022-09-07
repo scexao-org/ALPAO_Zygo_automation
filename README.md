@@ -81,22 +81,10 @@ Before you start using the class, there are a few house keeping things you shoul
 
 main.py is an exmaple on how I used this class. 
 
-The most useful methods are: 
-- windows2linux
-- subtract
-- reset_zvals0
-- get_zvals0
-- read_fits_file
-- read_mult_fits_files
-
-windows2linux grabs the file from zygo windows computer and saves it to the linux DM computer. Parameter file_name is what the new file will be named. 
-
-subtract takes two .datx files and takes the difference between the two files. 
-
-reset_zvals0 will take a measurement for all the actuators at zero. 
-
-get_zvals0 will only retrieve the save zval file. 
-
-read_fits_file will show a plt of the fits file path. 
-
-read_mult_fits_files does the same as above, but for multiple fits files, given a start and stop index.
+Most useful methods: 
+- windows2linux grabs the file from zygo windows computer and saves it to the linux DM computer. Parameter file_name is what the new file will be named. 
+- subtract takes two .datx files and takes the difference between the two files. 
+- reset_zvals0 will take a measurement for all the actuators at zero. 
+- get_zvals0 will only retrieve the save zval file. 
+- read_fits_file will show a plt of the fits file path. 
+- read_mult_fits_files does the same as above, but for multiple fits files, given a start and stop index.
