@@ -9,6 +9,7 @@ Almost all the tools to do this is created in convert_files.py. Adjust the file 
 main.py initializes the convert_files class and sets up how you might want to take measurements. 
 
 Step 1: Upload the measure.py file to the zygo computer. You can change the save path to whatever directory you desire
+           
            zygo1 = Zygo(**'C:\\Users\\zygo\\zygo_alicia\\zygo_rawdata'**)
 
 Step 2: 
