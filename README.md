@@ -88,3 +88,5 @@ Most useful methods:
 - get_zvals0 will only retrieve the save zval file. 
 - read_fits_file will show a plt of the fits file path. 
 - read_mult_fits_files does the same as above, but for multiple fits files, given a start and stop index.
+
+credit to kyohoon making/helping me make a majority of this code
