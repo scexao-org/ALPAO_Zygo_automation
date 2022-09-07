@@ -79,7 +79,7 @@ Before you start using the class, there are a few house keeping things you shoul
     nanmask = circular_aperture(0.9)(make_pupil_grid(zvals0.shape[0])).shaped
     nanmask[nanmask == 0] = np.nan
 
-main.py is an exmaple on how I used this class. 
+main.py and main2.py are exmaples on how I've used this class.
 
 Most useful methods: 
 - windows2linux grabs the file from zygo windows computer and saves it to the linux DM computer. Parameter file_name is what the new file will be named. 
