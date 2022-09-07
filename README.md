@@ -65,6 +65,33 @@ Finally, in read_mult_fits_file method, change completeName accordingly to your 
         
 # How to Use
 
+Before you start using the class, there are a few house keeping things you should do. 
+
+    dm = shm('dm64volt.im.shm') # creates connection to DM
+    retrieve_path = '/home/aorts/alicia/raw_data/' # this is where your .datx data will be saved
+    save_path = '/home/aorts/alicia/data/' # this is where you .fits files will be saved
+    convert = con(retrieve_path, save_path) # initialize class 
+    influence_functions = []
+    dm_cmd = np.zeros((64, 64))
+
+    active_actuators = convert.find_active_actuator()
+    zvals0 = convert.reset_zvals0()
+    nanmask = circular_aperture(0.9)(make_pupil_grid(zvals0.shape[0])).shaped
+    nanmask[nanmask == 0] = np.nan
+
+main.py is an exmaple on how I used this class. 
+
+The most useful methods are: 
+- windows2linux
+- subtract
+- reset_zvals0
+- get_zvals0
+- read_fits_file
+- read_mult_fits_files
+
+windows2linux grabs the file from zygo windows computer and saves it to the linux DM computer. Parameter 
+
+
 
         
 
