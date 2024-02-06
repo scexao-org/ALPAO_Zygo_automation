@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import paramiko
 from pyMilk.interfacing.shm import SHM as shm
-from convert_files import ConvertFiles as con
+from convert_files import ConvertFiles as ConvertFiles
 
 if __name__ == '__main__':
 
     dm = shm('dm64volt.im.shm')
     retrieve_path = '/home/aorts/alicia/zygo_data/'
     save_path = '/home/aorts/alicia/data/'
-    convert = con(retrieve_path, save_path)
+    convert = ConvertFiles(retrieve_path, save_path)
     convert.get_zvals0()
     file_path = 'C:/Users/zygo/zygo_alicia/zygo_rawdata/'
 

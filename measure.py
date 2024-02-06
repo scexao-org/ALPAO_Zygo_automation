@@ -3,25 +3,22 @@ Use this in the zygo windows computer.
 '''
 
 import os, sys
-import numpy as np
-import h5py
+
 import os.path
+
 import logging
 import matplotlib.pyplot as plt; plt.ion()
-from hcipy import *
-import utils
-from scipy import interpolate
-import time
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
+ZYGO_LIB_PATH = "C:\ProgramData\Zygo\Mx\Scripting"
+ZYGO_MEAS_SAVE_PATH = 'C:\\Users\\zygo\\zygo_alpao_feb24\\zygo_rawdata'
+
 try:
     print("try")
-    sys.path.append('C:\ProgramData\Zygo\Mx\Scripting')
-    import zygo
-    from zygo import mx, instrument, systemcommands, connectionmanager, ui, core
-    from zygo.units import Units
+    sys.path.append(ZYGO_LIB_PATH)
+    from zygo import mx, instrument, connectionmanager, core
     try:
         connectionmanager.connect()
         print("try")
@@ -53,6 +50,6 @@ class Zygo:
 
 if __name__ == "__main__":
     filename = sys.argv[1]
-    zygo1 = Zygo('C:\\Users\\zygo\\zygo_alicia\\zygo_rawdata')
+    zygo1 = Zygo(ZYGO_MEAS_SAVE_PATH)
     zygo1.measurement(filename)
     print(filename + ' Done!')

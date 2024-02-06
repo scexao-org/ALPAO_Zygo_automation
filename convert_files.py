@@ -1,32 +1,41 @@
-import sys
-import os
 import h5py
 import paramiko
 import numpy as np
 import matplotlib.pyplot as plt; plt.ion()
 from hcipy import *
 from astropy.io import fits
-from astropy.visualization import astropy_mpl_style
+
+
 from pyMilk.interfacing.shm import SHM
 
-dm_shm = SHM('dm64volt')
+dm_shm = SHM('dm64in')
+
+def connect_paramiko():
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostname='133.40.145.180', username='Administrator', password=b'zygo22')
+    return ssh
 
 # set ssh
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(hostname='133.40.145.180', username='Administrator', password=b'zygo22')
+ssh = connect_paramiko()
 sftp = ssh.open_sftp()
 
+LNX_RAW_DATA = '/home/scexao/alpao/raw_data'
+LNX_DATA = '/home/scexao/alpao/data'
+WIN_RAWDATA = 'C:/Users/zygo/zygo_alpao_feb24/zygo_rawdata'
+WIN_RAWDATA_BACKWARDS = WIN_RAWDATA.replace('/', '\\')
+
+ZYGO_SCRIPT = 'C:/Users/zygo/python/measure.py'
 
 class ConvertFiles:
     _save_path = ""
     _retrieve_path = ""
     
-    def __init__(self, retrievepath, savepath):
+    def __init__(self, retrieve_path, save_path):
         # retrieve path is where .datx files are saved.
         # save path is where post-data processing .fits files are saved. 
-        self._retrieve_path = retrievepath
-        self._save_path = savepath
+        self._retrieve_path = retrieve_path
+        self._save_path = save_path
     
     def find_active_actuator(self, nact=64, ca=1):
         # creates a mask to iterate through the active actuators. 
@@ -39,13 +48,15 @@ class ConvertFiles:
 
     def windows2linux(self, file_name):
         # transfer file from zygo windows computer to dm linux computer.
-        file_path = 'C:/Users/zygo/zygo_alicia/zygo_rawdata/'
-        name = file_path + file_name
-        file = self._retrieve_path + file_name
+
+        name = WIN_RAWDATA + '/' + file_name
+        name_bs = WIN_RAWDATA_BACKWARDS + '\\' + file_name
+
+        file = self._retrieve_path + '/' + file_name
         [a, b, c] = ssh.exec_command(
-            'python C:/Users/zygo/zygo_alicia/zygo_rawdata/measure.py ' + name)
+            f'python {ZYGO_SCRIPT} {name}')
         print(b.read())
-        sftp.get(name, file)
+        sftp.get(name_bs, file)
 
     def push_dm(self, dmx, dmy):
         # ask the dm to push a specific actuator in x, y coordinates. 
@@ -95,19 +106,16 @@ class ConvertFiles:
         # Set dm to 0 and reset zvals. 
         x = np.zeros((64, 64), dtype=np.float32)
         dm_shm.set_data(x)
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname='133.40.145.180', username='Administrator', password=b'zygo22')
-        file_path = 'C:/Users/zygo/zygo_alicia/zygo_rawdata/'
-        name0 = 'z_init.datx'
-        name = file_path + name0
+        ssh = connect_paramiko()
+        name = WIN_RAWDATA + '/z_init.datx'
 
-        [a, b, c] = ssh.exec_command(
-            'python C:/Users/zygo/zygo_alicia/zygo_rawdata/measure.py ' + name)
+        [a, b, c] = ssh.exec_command(f'python {ZYGO_SCRIPT} {name}')
         print(b.read())
         sftp = ssh.open_sftp()
-        sftp.get('C:\\Users\\zygo\\zygo_alicia\\zygo_rawdata\\z_init.datx', "/home/aorts/alicia/zygo_data/z_init.datx")
-        h5data = self._datx2py("/home/aorts/alicia/zygo_data/z_init.datx")
+        sftp.get(WIN_RAWDATA_BACKWARDS + "\\z_init.datx",
+                 self._retrieve_path + "/z_init.datx")
+        h5data = self._datx2py(self._retrieve_path + "/z_init.datx")
+
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvals = zdata['vals']
@@ -117,7 +125,7 @@ class ConvertFiles:
 
     def get_zvals0(self):
         # return zvals 
-        h5data = self._datx2py('/home/aorts/alicia/zygo_data/z_init.datx')
+        h5data = self._datx2py(self._save_path + "/z_init.datx")
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvals = zdata['vals']
@@ -135,7 +143,7 @@ class ConvertFiles:
         print("measurement has been taken and saved to " + name)
         x[dmx][dmy] = 0
         zvals = self.show_h5data(name)
-        zvals0 = self.show_h5data2('/home/aorts/alicia/zygo_data/z_init.datx')
+        zvals0 = self.show_h5data2(self._save_path + '/z_init.datx')
         nanmask = circular_aperture(0.9)(make_pupil_grid(zvals0.shape[0])).shaped
         nanmask[nanmask == 0] = np.nan
         diff = zvals - zvals0
@@ -202,7 +210,7 @@ class ConvertFiles:
         return difference
 
     def read_fits_file(self, file_path):
-        # will read a single .fits file. 
+        # will read a single .fits file.
         nanmask = circular_aperture(0.9)(make_pupil_grid(self.get_zvals0().shape[0])).shaped
         nanmask[nanmask == 0] = np.nan
         file_name = file_path[-14:]
@@ -218,7 +226,7 @@ class ConvertFiles:
         # will read multiple fits files. 
         influence_functions = []
         for i in range(start, stop):
-            completeName = '/home/aorts/alicia/zygo_data/infl_' + str(i + 1).zfill(4) + '.fits'
+            completeName = self._save_path + '/infl_' + str(i + 1).zfill(4) + '.fits'
             nanmask = circular_aperture(0.9)(make_pupil_grid(self.get_zvals0().shape[0])).shaped
             nanmask[nanmask == 0] = np.nan
             image_data = fits.getdata(completeName, ext=0)

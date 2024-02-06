@@ -2,23 +2,25 @@
 Run this to take a data cube. 
 '''
 
-import os, sys
 from hcipy import *
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import paramiko
 from pyMilk.interfacing.shm import SHM as shm
-from convert_files import ConvertFiles as con
+from convert_files import ConvertFiles
+
+'''
+MAIN PATHS
+'''
+LNX_RAW_DATA = '/home/scexao/alpao/raw_data/'
+LNX_DATA = '/home/scexao/alpao/data/'
+WIN_RAWDATA = 'C:/Users/zygo/zygo_alpao_feb24/zygo_rawdata/'
+WIN_RAWDATA_BACKWARDS = WIN_RAWDATA.replace('/', '\\')
 
 if __name__ == '__main__':
 
-    dm = shm('dm64volt.im.shm')
-    retrieve_path = '/home/aorts/alicia/raw_data/'
-    save_path = '/home/aorts/alicia/data/'
-    convert = con(retrieve_path, save_path)
+    dm = shm('dm64in')
+    convert = ConvertFiles(LNX_RAW_DATA, LNX_DATA)
     convert.get_zvals0()
-    file_path = 'C:/Users/zygo/zygo_alicia/zygo_rawdata/'
    
     influence_functions = []
     dm_cmd = np.zeros((64, 64))
