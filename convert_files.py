@@ -13,7 +13,7 @@ dm_shm = SHM('dm64in')
 def connect_paramiko():
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(hostname='133.40.145.180', username='Administrator', password=b'zygo22')
+    ssh.connect(hostname='133.40.145.223', username='Administrator', password=b'zygo22')
     return ssh
 
 # set ssh
@@ -31,11 +31,21 @@ class ConvertFiles:
     _save_path = ""
     _retrieve_path = ""
     
-    def __init__(self, retrieve_path, save_path):
+    def __init__(self, retrieve_path, save_path, use_shm: bool = False, dm_obj = None):
         # retrieve path is where .datx files are saved.
         # save path is where post-data processing .fits files are saved. 
         self._retrieve_path = retrieve_path
         self._save_path = save_path
+        self.use_shm = use_shm
+        self.dm_obj = dm_obj
+
+    def set_data(self, data):
+        if self.use_shm:
+            dm_shm.set_data(data)
+        else:
+            self.dm_obj.set_command_64x64(data)
+
+        
     
     def find_active_actuator(self, nact=64, ca=1):
         # creates a mask to iterate through the active actuators. 
@@ -46,33 +56,48 @@ class ConvertFiles:
         active_actuator = actuators[idx]
         return active_actuator
 
-    def windows2linux(self, file_name):
+    def windows2linux(self, file_stem):
         # transfer file from zygo windows computer to dm linux computer.
 
-        name = WIN_RAWDATA + '/' + file_name
-        name_bs = WIN_RAWDATA_BACKWARDS + '\\' + file_name
+        name = WIN_RAWDATA + '/' + file_stem + '.datx'
+        name_bs = WIN_RAWDATA_BACKWARDS + '\\' + file_stem + '.datx'
 
-        file = self._retrieve_path + '/' + file_name
+        file = self._retrieve_path + '/' + file_stem + '.datx'
         [a, b, c] = ssh.exec_command(
-            f'python {ZYGO_SCRIPT} {name}')
+            f'python {ZYGO_SCRIPT} {file_stem}')
         print(b.read())
         sftp.get(name_bs, file)
 
-    def push_dm(self, dmx, dmy):
+    def push_dm(self, dmx, dmy, poke=0.1):
         # ask the dm to push a specific actuator in x, y coordinates. 
-        x = np.zeros(((64, 64)), dtype=np.float32)
-        dm_shm.set_data(x)
-        x[dmx][dmy] = .1
-        print(x)
-        dm_shm.set_data(x)
-        name = str(dmx) + "_" + str(dmy) + ".datx"
+        x = np.zeros(((64, 64)), dtype=np.float64)
+        x[dmx][dmy] = poke
+        self.set_data(x)
+        name = f'{dmx}_{dmy}_{poke}poke.datx'
         self.windows2linux(name)
         print("measurement has been taken and saved to " + name)
         x[dmx][dmy] = 0
+        self.set_data(x)
+
+    def push_dm_multi(self,dmx_list,dmy_list, poke=0.1):
+        #ask the dm to push multiple actuators as defined by list of x,y coordinates
+        x = np.zeros(((64, 64)), dtype=np.float64)
+        for i in dmx_list:
+            for j in dmy_list:
+                x[i][j] = poke
+        print(x)
+        self.set_data(x)
+        name = f'{dmx_list[0]}_{dmy_list[0]}_{poke}poke3x3.datx'
+        self.windows2linux(name)
+        print("measurement has been taken and saved to " + name)
+        for i in dmx_list:
+            for j in dmy_list:
+                x[i][j] = 0.0
+        self.set_data(x)
 
     def show_h5data(self, file_name):
         # show the data of a .datx files. Return its data in the form of a numpy array.
-        h5data = self._datx2py(self._retrieve_path + file_name)
+        h5data = _datx2py(self._retrieve_path + file_name)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvals = zdata['vals']
@@ -88,7 +113,7 @@ class ConvertFiles:
 
     def show_h5data2(self, file_path):
         # same as above but the method variable is in the form of a file path instead of a file name. 
-        h5data = self._datx2py(file_path)
+        h5data = _datx2py(file_path)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvals = zdata['vals']
@@ -105,7 +130,7 @@ class ConvertFiles:
     def reset_zvals0(self):
         # Set dm to 0 and reset zvals. 
         x = np.zeros((64, 64), dtype=np.float32)
-        dm_shm.set_data(x)
+        self.set_data(x)
         ssh = connect_paramiko()
         name = WIN_RAWDATA + '/z_init.datx'
 
@@ -114,7 +139,7 @@ class ConvertFiles:
         sftp = ssh.open_sftp()
         sftp.get(WIN_RAWDATA_BACKWARDS + "\\z_init.datx",
                  self._retrieve_path + "/z_init.datx")
-        h5data = self._datx2py(self._retrieve_path + "/z_init.datx")
+        h5data = _datx2py(self._retrieve_path + "/z_init.datx")
 
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
@@ -125,7 +150,7 @@ class ConvertFiles:
 
     def get_zvals0(self):
         # return zvals 
-        h5data = self._datx2py(self._save_path + "/z_init.datx")
+        h5data = _datx2py(self._save_path + "/z_init.datx")
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvals = zdata['vals']
@@ -137,7 +162,7 @@ class ConvertFiles:
         # will take a measurement of a specific actuator w/ a specific amplitude. 
         x = np.zeros((64, 64), dtype=np.float32)
         x[dmx][dmy] = amplitude
-        dm_shm.set_data(x)
+        self.set_data(x)
         name = str(dmx) + "_" + str(dmy) + "_" + str(amplitude) + ".datx"
         self.windows2linux(name)
         print("measurement has been taken and saved to " + name)
@@ -147,7 +172,7 @@ class ConvertFiles:
         nanmask = circular_aperture(0.9)(make_pupil_grid(zvals0.shape[0])).shaped
         nanmask[nanmask == 0] = np.nan
         diff = zvals - zvals0
-        diff = diff * (632.8 / 2.0)
+        diff = diff #* (632.8 / 2.0)
         diff_wo_ptt = self.remove_ptt(diff, ca=0.9)
         plt.figure(1)
         plt.subplot(1, 3, 1)
@@ -168,32 +193,36 @@ class ConvertFiles:
 
     def analyze_data(self, file_zvalsa):
         # takes .datx file and data process and save as .fits file. 
-        h5data = self._datx2py(self._retrieve_path + file_zvalsa)
+        h5data = _datx2py(self._retrieve_path + '/' + file_zvalsa)
         zdata = h5data['Data']['Surface']
         zdata = list(zdata.values())[0]
         zvalsa = zdata['vals']
         zvalsa[zvalsa == zdata['attrs']['No Data']] = np.nan
         np.nan_to_num(zvalsa, copy=False)
-        zvals0 = self.get_zvals0()
+        try:
+            zvals0 = self.get_zvals0()
+        except OSError:
+            print('NO z_init.datx file for now.')
+            zvals0 = np.zeros_like(zvalsa)
         difference = zvalsa - zvals0
         difference = self.remove_ptt(difference)
         new_filename = file_zvalsa[slice(0, -5)]
-        difference = difference * (632.8 / 2)
+        difference = difference #* (632.8 / 2)
         complete_name = self._save_path + new_filename + ".fits"
         write_fits(difference.ravel(), complete_name)
         print(".datx difference has been made and was saved to " + complete_name)
         return difference
 
-    def subtract(self, file_zvals_pos, file_zvals_neg):
+    def subtract(self, file_zvals_pos, file_zvals_neg, poke):
         # takes the difference between two influence functions. Saves as .fits file.
-        pos = self._datx2py(self._retrieve_path + file_zvals_pos)
+        pos = _datx2py(self._retrieve_path + file_zvals_pos)
         pos_zdata = pos['Data']['Surface']
         pos_zdata = list(pos_zdata.values())[0]
         pos_zvals = pos_zdata['vals']
         pos_zvals[pos_zvals == pos_zdata['attrs']['No Data']] = np.nan
         np.nan_to_num(pos_zvals, copy=False)
 
-        neg = self._datx2py(self._retrieve_path + file_zvals_neg)
+        neg = _datx2py(self._retrieve_path + file_zvals_neg)
         neg_zdata = neg['Data']['Surface']
         neg_zdata = list(neg_zdata.values())[0]
         neg_zvals = neg_zdata['vals']
@@ -203,7 +232,7 @@ class ConvertFiles:
         dif = pos_zvals - neg_zvals
         dif = self.remove_ptt(dif)
         new_filename = file_zvals_neg[slice(0, -9)]
-        difference = dif * (632.8 / 2.0)
+        difference = dif * (1/(2.0*poke))   #* (632.8 / 2.0)
         complete_name = self._save_path + new_filename + '.fits'
         write_fits(difference.ravel(), complete_name)
         print(".datx difference has been made and file was saved to " + complete_name)
@@ -262,64 +291,80 @@ class ConvertFiles:
         data_wo_ptt = data - ptt_recon  # substract piston, tip, tilt from the original data
         return data_wo_ptt
 
-    def _datx2py(self, file_name):
-        # unpacks ,datx files into h5data. 
-        # unpack an h5 group into a dict
-        def _group2dict(obj):
-            return {k: _decode_h5(v) for k, v in zip(obj.keys(), obj.values())}
+import pathlib
 
-        # unpack a numpy structured array into a dict
-        def _struct2dict(obj):
-            names = obj.dtype.names
-            return [dict(zip(names, _decode_h5(record))) for record in obj]
+def convert_datx_fits(file_fullpath, target_folder,overwrite=True):
+    h5data = list(_datx2py(file_fullpath)['Data']['Surface'].values())[0]
+    h5vals = h5data['vals']
+    h5vals[h5vals == h5data['attrs']['No Data']] = 0.0
 
-        # decode h5py.File object and all of its elements recursively
-        def _decode_h5(obj):
-            # group -> dict
-            if isinstance(obj, h5py.Group):
-                d = _group2dict(obj)
-                if len(obj.attrs):
-                    d['attrs'] = _decode_h5(obj.attrs)
-                return d
-            # attributes -> dict
-            elif isinstance(obj, h5py.AttributeManager):
-                return _group2dict(obj)
-            # dataset -> numpy array if not empty
-            elif isinstance(obj, h5py.Dataset):
-                d = {'attrs': _decode_h5(obj.attrs)}
-                try:
-                    d['vals'] = obj[()]
-                except (OSError, TypeError):
-                    pass
-                return d
-            # numpy array -> unpack if possible
-            elif isinstance(obj, np.ndarray):
-                if np.issubdtype(obj.dtype, np.number) and obj.shape == (1,):
-                    return obj[0]
-                elif obj.dtype == 'object':
-                    return _decode_h5([_decode_h5(o) for o in obj])
-                elif np.issubdtype(obj.dtype, np.void):
-                    return _decode_h5(_struct2dict(obj))
-                else:
-                    return obj
-            # dimension converter -> dict
-            elif isinstance(obj, np.void):
+    p_datx = pathlib.Path(file_fullpath)
+    fitspath = target_folder + '/' + p_datx.stem + '.fits'
+
+    if overwrite == True:
+        fits.writeto(fitspath, h5vals, overwrite=True)
+    else:
+        fits.writeto(fitspath, h5vals)
+
+
+def _datx2py(file_name):
+    # unpacks ,datx files into h5data. 
+    # unpack an h5 group into a dict
+    def _group2dict(obj):
+        return {k: _decode_h5(v) for k, v in zip(obj.keys(), obj.values())}
+
+    # unpack a numpy structured array into a dict
+    def _struct2dict(obj):
+        names = obj.dtype.names
+        return [dict(zip(names, _decode_h5(record))) for record in obj]
+
+    # decode h5py.File object and all of its elements recursively
+    def _decode_h5(obj):
+        # group -> dict
+        if isinstance(obj, h5py.Group):
+            d = _group2dict(obj)
+            if len(obj.attrs):
+                d['attrs'] = _decode_h5(obj.attrs)
+            return d
+        # attributes -> dict
+        elif isinstance(obj, h5py.AttributeManager):
+            return _group2dict(obj)
+        # dataset -> numpy array if not empty
+        elif isinstance(obj, h5py.Dataset):
+            d = {'attrs': _decode_h5(obj.attrs)}
+            try:
+                d['vals'] = obj[()]
+            except (OSError, TypeError):
+                pass
+            return d
+        # numpy array -> unpack if possible
+        elif isinstance(obj, np.ndarray):
+            if np.issubdtype(obj.dtype, np.number) and obj.shape == (1,):
+                return obj[0]
+            elif obj.dtype == 'object':
                 return _decode_h5([_decode_h5(o) for o in obj])
-            # bytes -> str
-            elif isinstance(obj, bytes):
-                return obj.decode()
-            # collection -> unpack if length is 1
-            elif isinstance(obj, list) or isinstance(obj, tuple):
-                if len(obj) == 1:
-                    return obj[0]
-                else:
-                    return obj
-            # other stuff
+            elif np.issubdtype(obj.dtype, np.void):
+                return _decode_h5(_struct2dict(obj))
             else:
                 return obj
+        # dimension converter -> dict
+        elif isinstance(obj, np.void):
+            return _decode_h5([_decode_h5(o) for o in obj])
+        # bytes -> str
+        elif isinstance(obj, bytes):
+            return obj.decode()
+        # collection -> unpack if length is 1
+        elif isinstance(obj, list) or isinstance(obj, tuple):
+            if len(obj) == 1:
+                return obj[0]
+            else:
+                return obj
+        # other stuff
+        else:
+            return obj
 
-        # open the file and decode it
-        with h5py.File(file_name, 'r') as f:
-            h5data = _decode_h5(f)
+    # open the file and decode it
+    with h5py.File(file_name, 'r') as f:
+        h5data = _decode_h5(f)
 
-        return h5data
+    return h5data

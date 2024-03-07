@@ -28,16 +28,19 @@ except ImportError:
     log.warning('Could not load Zygo Python Library! Functionality will be severely crippled')
 
 class Zygo:
-
-    __filename = None
     __save_path = ""
 
-    def __init__(self, filename, path):
-        self.__filename = filename
+    def __init__(self, path):
         self.__save_path = path
 
     def set_path(self, path):
         self.__save_path = path
+
+    def measurement(self, file_stem):
+        instrument.measure(wait=True)
+        completeName = os.path.join(self.__save_path, file_stem + ".datx")
+        mx.save_data(completeName)
+        log.warning(f"Measurement taken to {file_stem}.datx")
 
     def actuator_measurement(self, x_actuators, y_actuators):
         for x in range(x_actuators):

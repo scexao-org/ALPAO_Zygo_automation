@@ -16,6 +16,14 @@ LNX_DATA = '/home/scexao/alpao/data/'
 WIN_RAWDATA = 'C:/Users/zygo/zygo_alpao_feb24/zygo_rawdata/'
 WIN_RAWDATA_BACKWARDS = WIN_RAWDATA.replace('/', '\\')
 
+
+from scipy.linalg import hadamard
+
+had_mat = hadamard(4096)
+rng = np.random.default_rng(0) # seeded RNG
+order = np.argsort(rng.random(size=4096)) # repeatable hadamard permutation
+had_mat_randomized = had_mat[:, order]
+
 if __name__ == '__main__':
 
     dm = shm('dm64in')
@@ -36,12 +44,18 @@ if __name__ == '__main__':
         # pos
         amplitude = 0.5
         dm_cmd_pos = np.reshape(active_actuators[i-1], [64, 64]) * amplitude
-        dm.set_data(dm_cmd_pos.astype(np.float32))
+        
+        dm.set_data(dm_cmd_pos.astype(np.float32)) # SHM
+        # dm.set_command_64x64(dm_cmd_pos.astype(np.float32)) # Alpao3228 object
+
         pos_name = 'infl_' + str(i).zfill(4) + '_pos.datx'
         convert.windows2linux(pos_name)
         # neg
         dm_cmd_neg = np.reshape(active_actuators[i-1], [64, 64]) * -1 * amplitude
-        dm.set_data(dm_cmd_neg.astype(np.float32))
+        
+        dm.set_data(dm_cmd_neg.astype(np.float32)) # SHM
+        # dm.set_command_64x64(dm_cmd_neg.astype(np.float32)) # Alpao3228 object
+        
         neg_name = 'infl_' + str(i).zfill(4) + '_neg.datx'
         convert.windows2linux(neg_name)
 
